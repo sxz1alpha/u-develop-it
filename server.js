@@ -74,9 +74,40 @@ app.post('/api/candidate', ({ body }, res) => {
     });
 });
 
+// Update a candidate's party
+app.put('/api/candidate/:id', (req, res) => {
+    //forces any put request to include party_id property
+    const errors = inputCheck(req.body, 'party_id');
+
+    if (errors) {
+        res.status(400).json({ error: errors });
+        return;
+    }
+    //=====
+    const sql = `UPDATE candidates SET party_id = ?
+                 WHERE id = ?`;
+    // The affected row's id should always be part of the route (e.g., /api/candidate/2) while the actual fields updated should be part of the body.
+    const params = [req.params.party_id, req.params.id];
+    db.query(sql, params, (err, result) => {
+        if (err) {
+            res.status(400).json({ error: err.message });
+            //checks if a record was found
+        } else if (!result.affectedRows) {
+            res.json({
+                message: 'candidate not found'
+            });
+        } else {
+            res.json({
+                message: 'success',
+                data: req.body,
+                changes: result.affectedRows
+            });
+        }
+    });
+});
 //GET a single candidate
 app.get('/api/candidate/:id', (req, res) => {
-    const sql = `SELECT candidates. *, party.name
+    const sql = `SELECT candidates. *, parties.name
                 AS party_name
                 FROM candidates
                 LEFT JOIN parties
@@ -115,7 +146,56 @@ app.get('/api/candidates', (req, res) => {
     });
 
 });
-
+// route to get all parties from parties table
+app.get('/api/parties', (req, res) => {
+    const sql = `SELECT * FROM parties`;
+    db.query(sql, (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json({
+            message: 'success',
+            data: rows
+        });
+    });
+});
+//route to get a single party from parties table by id
+app.get('/api/party/:id', (req, res) => {
+    const sql = `SELECT * FROM parties WHERE id = ?`;
+    const params = [req.params.id];
+    db.query(sql, params, (err, row) => {
+        if(err) {
+            res.status(400).json({ error: err.message });
+            return;
+        }
+        res.json({
+            message: 'success',
+            data: row
+        });
+    });
+});
+//delete route for parties table
+app.delete('/api/party/:id', (req, res) => {
+    const sql = `DELETE FROM parties WHERE id = ?`;
+    const params = [req.params.id];
+    db.query(sql, params, (err, result) => {
+        if(err) {
+            res.status(400).json({ error: err.message });
+            //checks if anything was deleted
+        } else if (!result.affectedRows) {
+            res.json({
+                message: 'Party not found'
+            });
+        } else {
+            res.json({
+                message: 'deleted',
+                changes: result.affectedRows,
+                id: req.params.id
+            });
+        }
+    });
+});
 
 //Default response for any other request (Not Found)
 app.use((req, res) => {
