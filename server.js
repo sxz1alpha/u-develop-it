@@ -84,17 +84,17 @@ app.put('/api/candidate/:id', (req, res) => {
         return;
     }
     //=====
-    const sql = `UPDATE candidates SET party_id = ?
-                 WHERE id = ?`;
+    const sql = `UPDATE candidates SET party_id = ? 
+    WHERE id = ?`;
     // The affected row's id should always be part of the route (e.g., /api/candidate/2) while the actual fields updated should be part of the body.
-    const params = [req.params.party_id, req.params.id];
+    const params = [req.body.party_id, req.params.id];
     db.query(sql, params, (err, result) => {
         if (err) {
             res.status(400).json({ error: err.message });
             //checks if a record was found
         } else if (!result.affectedRows) {
             res.json({
-                message: 'candidate not found'
+                message: 'Candidate not found'
             });
         } else {
             res.json({
